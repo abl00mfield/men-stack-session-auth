@@ -3,6 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const methodOverride = require("method-override");
 const morgan = require("morgan");
+const authController = require("./controllers/auth.js");
 
 //initialize express app
 const app = express();
@@ -24,6 +25,9 @@ app.use(express.urlencoded({ extended: false }));
 app.use(methodOverride("_method"));
 // Morgan for logging HTTP requests
 app.use(morgan("dev"));
+//router code is a type of middleware
+app.use("/auth", authController);
+//anything using auth will automatically be forward to the router code
 
 //mount routes
 app.get("/", (req, res) => {
