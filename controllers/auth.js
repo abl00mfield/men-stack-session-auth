@@ -29,4 +29,35 @@ router.post("/sign-up", async (req, res) => {
   //   res.redirect();
 });
 
+router.get("/sign-in", (req, res) => {
+  //send the page that has the login form
+  res.render("auth/sign-in.ejs");
+});
+
+router.post("/sign-in", async (req, res) => {
+  console.log("username: ", req.body.username);
+  console.log("password: ", req.body.password);
+  const userInDatabase = await User.findOne({ username: req.body.username });
+  if (!userInDatabase) {
+    return res.send("Login failed. Please try again");
+  }
+
+  const validPassword = bcrypt.compareSync(
+    req.body.password,
+    userInDatabase.password
+  );
+
+  if (!validPassword) {
+    return res.send("Login failed. Please try again");
+  }
+  //we have verified the user and passwords match
+  //create a session with the user
+  req.session.user = {
+    username: userInDatabase.username,
+    _id: userInDatabase._id,
+  };
+
+  res.redirect("/");
+});
+
 module.exports = router;
