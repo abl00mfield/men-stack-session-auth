@@ -2,10 +2,11 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
+const isSignedIn = require("../middleware/is-signed-in.js");
 
 //router object is similar to app object in server js
 //however, it only has router functionality
-router.get("/sign-up", (req, res) => {
+router.get("/sign-up", isSignedIn, (req, res) => {
   res.render("auth/sign-up.ejs");
 });
 
@@ -24,19 +25,24 @@ router.post("/sign-up", async (req, res) => {
   req.body.password = hashedPassword;
   //create user in database
   const user = await User.create(req.body);
-  res.send(`Thanks for signing up ${user.username}`);
 
-  //   res.redirect();
+  //keep them logged in since they just created the account
+  req.session.user = {
+    username: user.username,
+    _id: user._id,
+  };
+
+  //save the session and redirect back to home page as a logged in user
+  req.session.save(() => {
+    res.redirect("/");
+  });
 });
 
-router.get("/sign-in", (req, res) => {
-  //send the page that has the login form
+router.get("/sign-in", isSignedIn, (req, res) => {
   res.render("auth/sign-in.ejs");
 });
 
 router.post("/sign-in", async (req, res) => {
-  console.log("username: ", req.body.username);
-  console.log("password: ", req.body.password);
   const userInDatabase = await User.findOne({ username: req.body.username });
   if (!userInDatabase) {
     return res.send("Login failed. Please try again");
@@ -57,7 +63,14 @@ router.post("/sign-in", async (req, res) => {
     _id: userInDatabase._id,
   };
 
-  res.redirect("/");
+  req.session.save(() => {
+    res.redirect("/");
+  });
 });
 
+router.get("/sign-out", (req, res) => {
+  req.session.destroy(() => {
+    res.redirect("/");
+  });
+});
 module.exports = router;
